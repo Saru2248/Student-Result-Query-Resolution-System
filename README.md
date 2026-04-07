@@ -170,6 +170,3 @@ Sarthak Dhumal
 Computer Engineering (6th Semester)
 Mini Project
 
-📄 License
-
-MIT License
