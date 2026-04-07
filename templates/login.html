@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login – CSMSS Student Result Query Resolution System</title>
+    <meta name="description"
+        content="Secure login portal for the CSMSS Student Result Query Resolution System. Students and admins can sign in to manage academic complaints.">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <!-- Flash Messages -->
+    <div class="flash-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+        <div class="flash-msg {{ category }}">
+            {% if category == 'success' %}<i class="fas fa-check-circle"></i>
+            {% elif category == 'danger' %}<i class="fas fa-exclamation-circle"></i>
+            {% elif category == 'warning' %}<i class="fas fa-triangle-exclamation"></i>
+            {% else %}<i class="fas fa-info-circle"></i>{% endif %}
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endwith %}
+    </div>
+
+    <!-- Auth Wrapper -->
+    <div class="auth-wrapper">
+        <div class="auth-card">
+
+            <!-- Logo -->
+            <div class="auth-logo" style="display:flex; flex-direction:column; align-items:center; text-align:center;">
+                <img src="{{ url_for('static', filename='img/csmss_logo.png') }}" alt="CSMSS Logo"
+                    style="width: 80px; height: auto; margin-bottom: 12px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.1); padding: 4px; background: white;">
+                <div class="logo-text" style="width: 100%;">
+                    <h3
+                        style="font-size: 1.4rem; font-weight: 800; margin-bottom: 4px; letter-spacing: 0.5px; color: #f8fafc;">
+                        CSMSS</h3>
+                    <small style="font-size: 0.8rem; color: #94a3b8; line-height: 1.2; display: block;">Student Result
+                        Query Resolution System</small>
+                </div>
+            </div>
+
+            <h2>Welcome Back 👋</h2>
+            <p class="sub">Sign in to your account to continue</p>
+
+            <form action="/login" method="POST" id="loginForm">
+                <div class="mb-3">
+                    <label class="form-label" for="loginEmail">Email Address</label>
+                    <div class="input-group">
+                        <span class="input-group-text"
+                            style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;">
+                            <i class="fas fa-envelope fa-sm"></i>
+                        </span>
+                        <input type="email" name="email" id="loginEmail" class="form-control"
+                            placeholder="you@example.com" required autocomplete="email">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label" for="loginPassword">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"
+                            style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;">
+                            <i class="fas fa-lock fa-sm"></i>
+                        </span>
+                        <input type="password" name="password" id="loginPassword" class="form-control"
+                            placeholder="••••••••" required autocomplete="current-password">
+                        <span class="input-group-text toggle-pw" id="togglePw"
+                            style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;cursor:pointer;">
+                            <i class="fas fa-eye fa-sm" id="eyeIcon"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary-custom" id="loginBtn">
+                    <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                </button>
+            </form>
+
+
+            <div class="auth-footer">
+                Don't have an account? <a href="/register">Create one &rarr;</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle password visibility
+        document.getElementById('togglePw').addEventListener('click', function () {
+            const pw = document.getElementById('loginPassword');
+            const eye = document.getElementById('eyeIcon');
+            if (pw.type === 'password') {
+                pw.type = 'text';
+                eye.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                pw.type = 'password';
+                eye.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        });
+
+        // Loading state on submit
+        document.getElementById('loginForm').addEventListener('submit', function () {
+            const btn = document.getElementById('loginBtn');
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in…';
+            btn.disabled = true;
+        });
+    </script>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+
+</html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard – CSMSS</title>
+  <meta name="description" content="Student dashboard to submit and track academic result complaints on the CSMSS portal.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- Flash Messages -->
+<div class="flash-container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash-msg {{ category }}">
+        {% if category == 'success' %}<i class="fas fa-check-circle"></i>
+        {% elif category == 'danger' %}<i class="fas fa-exclamation-circle"></i>
+        {% elif category == 'warning' %}<i class="fas fa-triangle-exclamation"></i>
+        {% else %}<i class="fas fa-info-circle"></i>{% endif %}
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endwith %}
+</div>
+
+<!-- Mobile Toggle -->
+<button class="mobile-toggle" id="mobileToggle" aria-label="Open sidebar">
+  <i class="fas fa-bars"></i>
+</button>
+
+<div class="layout">
+
+  <!-- ──── SIDEBAR ──────────────────────────────────────── -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <img src="{{ url_for('static', filename='img/csmss_logo.png') }}" alt="CSMSS Logo" style="width: 48px; height: 48px; border-radius: 50%; object-fit: contain; background: white; padding: 2px;">
+      <div class="brand" style="margin-left: 8px;">CSMSS<br><small style="color:#64748b;font-size:0.65rem;font-weight:400;line-height:1.2;display:block;">Student Result Query<br>Resolution System</small></div>
+    </div>
+
+    <span class="nav-section-label">Menu</span>
+    <a href="/dashboard" class="nav-item active"><i class="fas fa-home"></i> Dashboard</a>
+
+    <span class="nav-section-label">Complaints</span>
+    <a href="#newComplaint" class="nav-item" data-bs-toggle="collapse" aria-expanded="false">
+      <i class="fas fa-plus-circle"></i> New Complaint
+    </a>
+    <a href="#myComplaints" class="nav-item">
+      <i class="fas fa-list-check"></i> My Complaints
+    </a>
+
+    <span class="nav-section-label">Documents</span>
+    <a href="#uploadSection" class="nav-item">
+      <i class="fas fa-file-arrow-up"></i> Upload Documents
+    </a>
+    <a href="#myUploads" class="nav-item">
+      <i class="fas fa-folder-open"></i> My Uploads
+    </a>
+
+    <div class="sidebar-footer">
+      <div class="user-badge">
+        <div class="user-avatar">{{ session['user_name'][0] | upper }}</div>
+        <div class="user-info">
+          <div class="name">{{ session['user_name'] }}</div>
+          <div class="role">Student</div>
+        </div>
+      </div>
+      <a href="/logout" class="nav-item mt-2" style="color:#ef4444;" id="logoutLink">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </a>
+    </div>
+  </nav>
+
+  <!-- ──── MAIN CONTENT ──────────────────────────────── -->
+  <main class="main-content">
+
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-title">
+        <h1>My Dashboard</h1>
+        <p>Welcome back, <strong>{{ session['user_name'] }}</strong> 👋</p>
+      </div>
+      <div class="topbar-actions">
+        <!-- Notifications -->
+        <div style="position:relative;">
+          <a class="btn-icon" id="notifBtn" title="Notifications" href="#">
+            <i class="fas fa-bell"></i>
+            {% if notifications %}<span class="badge-dot"></span>{% endif %}
+          </a>
+          <div class="notif-panel" id="notifPanel">
+            <div style="padding:0.75rem 1rem;border-bottom:1px solid rgba(255,255,255,0.07);font-size:0.8rem;font-weight:700;color:#c7d2fe;">
+              <i class="fas fa-bell me-2"></i>Notifications
+            </div>
+            {% if notifications %}
+              {% for n in notifications %}
+                <div class="notif-item">{{ n['message'] }}<br>
+                  <small style="color:#475569;">{{ n['created_at'] }}</small>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="notif-empty"><i class="fas fa-bell-slash" style="font-size:1.5rem;opacity:0.3;margin-bottom:6px;display:block;"></i>No new notifications</div>
+            {% endif %}
+          </div>
+        </div>
+        <a href="/logout" class="btn-icon" title="Logout">
+          <i class="fas fa-sign-out-alt"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-label">Total Queries</div>
+        <div class="stat-value" data-target="{{ total }}">{{ total }}</div>
+        <i class="fas fa-inbox stat-icon"></i>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-label">Pending</div>
+        <div class="stat-value" data-target="{{ pending }}">{{ pending }}</div>
+        <i class="fas fa-clock stat-icon"></i>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-label">In Progress</div>
+        <div class="stat-value" data-target="{{ progress }}">{{ progress }}</div>
+        <i class="fas fa-spinner stat-icon"></i>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">Resolved</div>
+        <div class="stat-value" data-target="{{ resolved }}">{{ resolved }}</div>
+        <i class="fas fa-check-circle stat-icon"></i>
+      </div>
+    </div>
+
+    <div class="row g-4">
+
+      <!-- ── Submit New Complaint ──────────────────────── -->
+      <div class="col-12 col-lg-5" id="newComplaint">
+        <div class="card-glass h-100">
+          <div class="card-header-custom">
+            <h5><i class="fas fa-paper-plane"></i> Submit New Query</h5>
+          </div>
+          <div class="card-body-custom">
+            <form action="/add_complaint" method="POST" id="complaintForm" enctype="multipart/form-data">
+
+              <div class="mb-3">
+                <label class="form-label">Subject / Course</label>
+                <input type="text" name="subject" class="form-control"
+                       placeholder="e.g. Mathematics-III, DBMS" required maxlength="120">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Issue Type</label>
+                <select name="issue_type" class="form-select" required>
+                  <option value="" disabled selected>Select issue…</option>
+                  <option>Marks Not Updated</option>
+                  <option>Wrong Marks Entered</option>
+                  <option>Grade Discrepancy</option>
+                  <option>Internal Assessment Issue</option>
+                  <option>Attendance Mismatch</option>
+                  <option>Practical / Lab Marks</option>
+                  <option>Result Not Published</option>
+                  <option>Other</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Priority</label>
+                <select name="priority" class="form-select">
+                  <option value="Normal" selected>Normal</option>
+                  <option value="High">High – Urgent</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label">Description</label>
+                <textarea name="description" class="form-control" rows="4"
+                          placeholder="Explain your issue in detail…" required maxlength="1000"></textarea>
+                <div class="mt-1" style="font-size:0.7rem;color:#64748b;" id="charCount">0 / 1000 characters</div>
+              </div>
+
+              <!-- ── Document Uploads ──────────────────────── -->
+              <div style="border-top:1px solid rgba(255,255,255,0.07);padding-top:1rem;margin-top:0.5rem;">
+                <p style="font-size:0.78rem;font-weight:700;color:#c7d2fe;margin-bottom:0.8rem;">
+                  <i class="fas fa-paperclip me-1"></i>Attach Supporting Documents <span style="color:#64748b;font-weight:400;">(optional)</span>
+                </p>
+
+                <!-- Application Document -->
+                <div class="mb-3">
+                  <label class="form-label" for="application_file">
+                    <i class="fas fa-file-lines me-1" style="color:#818cf8;"></i>Application with HOD sign
+                  </label>
+                  <input type="file" name="application_file" id="application_file"
+                         class="upload-input" accept=".pdf,.png,.jpg,.jpeg"
+                         onchange="showFileName(this,'appFileName')">
+                  <label for="application_file" class="upload-file-label" style="display:flex;justify-content:center;">
+                    <i class="fas fa-upload"></i>
+                    <span id="appFileName">Choose file (PDF / Image, max 5 MB)</span>
+                  </label>
+                </div>
+
+                <!-- Proof of Result (NEW) -->
+                <div class="mb-4">
+                  <label class="form-label" for="proof_file">
+                    <i class="fas fa-image me-1" style="color:#f59e0b;"></i>
+                    Proof of Result
+                    <span style="font-size:0.72rem;color:#f59e0b;font-weight:600;background:rgba(245,158,11,0.12);padding:2px 7px;border-radius:99px;border:1px solid rgba(245,158,11,0.3);">
+                      ⚡ Required for Merged PDF
+                    </span>
+                  </label>
+                  <small style="display:block;font-size:0.72rem;color:#94a3b8;margin-bottom:6px;">
+                    Upload your marksheet screenshot or result PDF. This will be merged into the final downloadable document.
+                  </small>
+                  <input type="file" name="proof_file" id="proof_file"
+                         class="upload-input" accept=".pdf,.png,.jpg,.jpeg"
+                         onchange="showFileName(this,'proofFileName')">
+                  <label for="proof_file" class="upload-file-label" style="display:flex;justify-content:center;background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.35);color:#fbbf24;">
+                    <i class="fas fa-image"></i>
+                    <span id="proofFileName">Choose Marksheet / Result PDF (max 5 MB)</span>
+                  </label>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-submit w-100" id="submitBtn">
+                <i class="fas fa-paper-plane me-2"></i>Submit Complaint
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Complaint History ──────────────────────────── -->
+      <div class="col-12 col-lg-7" id="myComplaints">
+        <div class="card-glass">
+          <div class="card-header-custom">
+            <h5><i class="fas fa-list-check"></i> My Complaints</h5>
+            <span style="font-size:0.78rem;color:#64748b;">{{ total }} total</span>
+          </div>
+          <div class="card-body-custom" style="max-height:560px;overflow-y:auto;">
+            {% if complaints %}
+              {% for c in complaints %}
+                {% set s = c['status'] | lower | replace(' ','') %}
+                <div class="complaint-card {{ s }}">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;">
+                    <div class="c-subject">{{ c['subject'] }}</div>
+                    <div style="display:flex;gap:6px;">
+                      <span class="badge-status {{ s }}">
+                        {% if s == 'pending' %}<i class="fas fa-clock fa-xs"></i>
+                        {% elif s == 'inprogress' %}<i class="fas fa-spinner fa-xs"></i>
+                        {% else %}<i class="fas fa-check fa-xs"></i>{% endif %}
+                        {{ c['status'] }}
+                      </span>
+                      {% set p = c['priority'] | lower %}
+                      <span class="badge-priority {{ p }}">{{ c['priority'] }}</span>
+                    </div>
+                  </div>
+
+                  <div class="c-meta">
+                    <span><i class="fas fa-tag fa-xs me-1"></i>{{ c['issue_type'] }}</span>
+                    <span><i class="fas fa-calendar fa-xs me-1"></i>{{ c['created_at'][:10] }}</span>
+                  </div>
+
+                  <p class="c-desc">{{ c['description'][:160] }}{% if c['description']|length > 160 %}…{% endif %}</p>
+
+                  {% if c['reply'] %}
+                    <div class="c-reply">
+                      <i class="fas fa-reply me-1" style="color:#818cf8;"></i>
+                      <strong style="color:#c7d2fe;">Admin Reply:</strong> {{ c['reply'] }}
+                    </div>
+                  {% endif %}
+
+                  {% if c['application_file'] %}
+                    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+                      <a href="/uploads/{{ c['application_file'] }}" target="_blank" class="doc-link">
+                        <i class="fas fa-file-lines fa-xs"></i> Application with HOD sign
+                      </a>
+                    </div>
+                  {% endif %}
+
+                  <!-- Download Buttons -->
+                  <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                    <!-- Page PDF -->
+                    <a href="/download_pdf/{{ c['id'] }}" target="_blank" class="doc-link" style="color:#c7d2fe;background:rgba(79,70,229,0.15);">
+                      <i class="fas fa-file-pdf fa-xs"></i> Application PDF
+                    </a>
+                    <!-- Merged Final PDF -->
+                    {% if c['proof_file'] %}
+                      <a href="/download_merged/{{ c['id'] }}" target="_blank" class="doc-link"
+                         style="color:#fbbf24;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);font-weight:700;">
+                        <i class="fas fa-file-zipper fa-xs"></i> Download Final Document
+                      </a>
+                    {% else %}
+                      <span style="font-size:0.72rem;color:#64748b;font-style:italic;">
+                        <i class="fas fa-info-circle fa-xs"></i> Upload proof to generate merged PDF
+                      </span>
+                    {% endif %}
+                    <!-- Doc Status Badge -->
+                    {% if c['doc_status'] == 'verified' %}
+                      <span class="hod-badge"><i class="fas fa-circle-check fa-xs"></i> Docs Verified</span>
+                    {% elif c['doc_status'] == 'rejected' %}
+                      <span style="display:inline-flex;align-items:center;gap:4px;padding:0.18em 0.55em;border-radius:99px;font-size:0.68rem;font-weight:700;background:rgba(239,68,68,0.15);color:#fca5a5;border:1px solid rgba(239,68,68,0.3);">
+                        <i class="fas fa-circle-xmark fa-xs"></i> Docs Rejected
+                      </span>
+                    {% elif c['is_verified'] %}
+                      <span class="hod-badge ms-1"><i class="fas fa-circle-check fa-xs"></i> Admin Verified</span>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No complaints submitted yet.<br>Use the form on the left to raise your first query.</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /row -->
+  </main>
+
+</div><!-- /layout -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Char counter for description
+  const desc = document.querySelector('textarea[name="description"]');
+  const cnt  = document.getElementById('charCount');
+  if (desc && cnt) {
+    desc.addEventListener('input', () => {
+      cnt.textContent = desc.value.length + ' / 1000 characters';
+      cnt.style.color = desc.value.length > 900 ? '#ef4444' : '#64748b';
+    });
+  }
+
+  // Show selected filename in custom file input label
+  function showFileName(input, spanId) {
+    const span = document.getElementById(spanId);
+    if (!span) return;
+    if (input.files && input.files.length > 0) {
+      const name = input.files[0].name;
+      const size = (input.files[0].size / 1024).toFixed(0);
+      span.textContent = name + ' (' + size + ' KB)';
+      span.style.color = '#a5b4fc';
+    } else {
+      span.textContent = 'No file chosen';
+      span.style.color = '';
+    }
+  }
+</script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

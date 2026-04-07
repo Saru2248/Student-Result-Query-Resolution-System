@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register – CSMSS Student Result Query Resolution System</title>
+  <meta name="description" content="Create your student account on the CSMSS portal to submit and track academic complaint queries.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- Flash Messages -->
+<div class="flash-container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash-msg {{ category }}">
+        {% if category == 'success' %}<i class="fas fa-check-circle"></i>
+        {% elif category == 'danger' %}<i class="fas fa-exclamation-circle"></i>
+        {% else %}<i class="fas fa-info-circle"></i>{% endif %}
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endwith %}
+</div>
+
+<div class="auth-wrapper">
+  <div class="auth-card" style="max-width:500px;">
+
+    <!-- Logo -->
+    <div class="auth-logo" style="display:flex; flex-direction:column; align-items:center; text-align:center;">
+      <img src="{{ url_for('static', filename='img/csmss_logo.png') }}" alt="CSMSS Logo" style="width: 80px; height: auto; margin-bottom: 12px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.1); padding: 4px; background: white;">
+      <div class="logo-text" style="width: 100%;">
+        <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 4px; letter-spacing: 0.5px; color: #f8fafc;">CSMSS</h3>
+        <small style="font-size: 0.8rem; color: #94a3b8; line-height: 1.2; display: block;">Student Result Query Resolution System</small>
+      </div>
+    </div>
+
+    <h2>Create Account 🎓</h2>
+    <p class="sub">Register with your college email and PRN number</p>
+
+    <form action="/register" method="POST" id="regForm" novalidate>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12">
+          <label class="form-label" for="regName">Full Name</label>
+          <div class="input-group">
+            <span class="input-group-text" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;">
+              <i class="fas fa-user fa-sm"></i>
+            </span>
+            <input type="text" name="name" id="regName" class="form-control"
+                   placeholder="Your full name" required autocomplete="name">
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label" for="regEmail">College Email</label>
+          <div class="input-group">
+            <span class="input-group-text" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;">
+              <i class="fas fa-envelope fa-sm"></i>
+            </span>
+            <input type="email" name="email" id="regEmail" class="form-control"
+                   placeholder="student@college.edu" required autocomplete="email">
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label" for="regPrn">PRN / Roll Number</label>
+          <div class="input-group">
+            <span class="input-group-text" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;">
+              <i class="fas fa-id-card fa-sm"></i>
+            </span>
+            <input type="text" name="prn" id="regPrn" class="form-control"
+                   placeholder="e.g. 21ABCDE001" required autocomplete="off">
+          </div>
+        </div>
+
+        <div class="col-sm-6">
+          <label class="form-label" for="regPassword">Password</label>
+          <div class="input-group">
+            <span class="input-group-text" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;">
+              <i class="fas fa-lock fa-sm"></i>
+            </span>
+            <input type="password" name="password" id="regPassword" class="form-control"
+                   placeholder="Min 6 chars" required autocomplete="new-password">
+          </div>
+        </div>
+
+        <div class="col-sm-6">
+          <label class="form-label" for="regConfirm">Confirm Password</label>
+          <div class="input-group">
+            <span class="input-group-text" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;">
+              <i class="fas fa-lock fa-sm"></i>
+            </span>
+            <input type="password" name="confirm_password" id="regConfirm" class="form-control"
+                   placeholder="Repeat password" required autocomplete="new-password">
+          </div>
+          <div id="pwMatch" class="mt-1" style="font-size:0.73rem;"></div>
+        </div>
+      </div>
+
+      <!-- Password strength -->
+      <div class="mb-3" id="strengthBlock" style="display:none;">
+        <div style="height:4px;border-radius:99px;background:#1e1e2e;overflow:hidden;">
+          <div id="strengthBar" style="height:100%;width:0;border-radius:99px;transition:all 0.3s;"></div>
+        </div>
+        <span id="strengthLabel" style="font-size:0.72rem;color:#94a3b8;"></span>
+      </div>
+
+      <button type="submit" class="btn-primary-custom" id="regBtn">
+        <i class="fas fa-user-plus me-2"></i>Create Account
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      Already registered? <a href="/">Sign in &rarr;</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  const pw      = document.getElementById('regPassword');
+  const confirm = document.getElementById('regConfirm');
+  const pwMatch = document.getElementById('pwMatch');
+  const bar     = document.getElementById('strengthBar');
+  const label   = document.getElementById('strengthLabel');
+  const block   = document.getElementById('strengthBlock');
+
+  pw.addEventListener('input', function () {
+    const v = this.value;
+    block.style.display = v ? 'block' : 'none';
+
+    let score = 0;
+    if (v.length >= 6)  score++;
+    if (v.length >= 10) score++;
+    if (/[A-Z]/.test(v)) score++;
+    if (/[0-9]/.test(v)) score++;
+    if (/[^A-Za-z0-9]/.test(v)) score++;
+
+    const colors  = ['#ef4444','#f59e0b','#f59e0b','#10b981','#10b981'];
+    const labels  = ['Too weak','Weak','Fair','Strong','Very strong'];
+    const widths  = ['20%','40%','60%','80%','100%'];
+
+    bar.style.width      = widths[score - 1] || '10%';
+    bar.style.background = colors[score - 1] || '#ef4444';
+    label.textContent    = labels[score - 1] || '';
+
+    checkMatch();
+  });
+
+  confirm.addEventListener('input', checkMatch);
+
+  function checkMatch() {
+    if (!confirm.value) { pwMatch.innerHTML = ''; return; }
+    if (pw.value === confirm.value) {
+      pwMatch.innerHTML = '<span style="color:#10b981"><i class="fas fa-check-circle"></i> Passwords match</span>';
+    } else {
+      pwMatch.innerHTML = '<span style="color:#ef4444"><i class="fas fa-times-circle"></i> Passwords do not match</span>';
+    }
+  }
+
+  document.getElementById('regForm').addEventListener('submit', function (e) {
+    if (pw.value !== confirm.value) {
+      e.preventDefault();
+      pwMatch.innerHTML = '<span style="color:#ef4444"><i class="fas fa-times-circle"></i> Passwords do not match</span>';
+      return;
+    }
+    const btn = document.getElementById('regBtn');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating account…';
+    btn.disabled  = true;
+  });
+</script>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
